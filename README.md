@@ -3,6 +3,7 @@ This is a workshop I developed to learn the basic concepts of machine learning a
 
 <br />
 # Packages and Software
+<br />
 R and preferably Rstudio
 install.packages(dplyr)
 install.packages(ggplot2)
