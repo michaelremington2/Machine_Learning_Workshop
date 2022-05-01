@@ -3,8 +3,9 @@ This is a workshop I developed to learn the basic concepts of machine learning a
 
 <br />
 # Packages and Software
-<br />
-R and preferably Rstudio
+
+-R and preferably Rstudio
+-run these in R
 install.packages(dplyr)
 install.packages(ggplot2)
 install.packages(lubridate)
