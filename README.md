@@ -5,12 +5,12 @@ This is a workshop I developed to learn the basic concepts of machine learning a
 
 - R and preferably Rstudio
 - run these in R \
-install.packages(dplyr) \
-install.packages(ggplot2) \
-install.packages(lubridate) \
-install.packages(tidyr) \
-install.packages(rpart) \
-install.packages(randomForest) \
-install.packages(caret) \
-install.packages(pROC) \
-install.packages(ROCR) 
+install.packages("dplyr") \
+install.packages("ggplot2") \
+install.packages("lubridate") \
+install.packages("tidyr") \
+install.packages("rpart") \
+install.packages("randomForest") \
+install.packages("caret") \
+install.packages("pROC") \
+install.packages("ROCR") 
