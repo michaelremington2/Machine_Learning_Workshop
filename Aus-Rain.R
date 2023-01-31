@@ -8,6 +8,7 @@ library(rpart)
 library(randomForest)
 library(caret)
 library(pROC)
+library(mice)
 
 #RainTomorrow is the target variable to predict. It means -- did it rain the next day, Yes or No?
 # This column is Yes if the rain for that day was 1mm or more.
@@ -29,15 +30,30 @@ count_na <- function(vector){
 na_df<-t(data.frame(c(lapply(rain, count_na))))
 
 
+# Percent of missing data in each column
+
+pMiss <- function(x){sum(is.na(x))/length(x)*100}
+apply(rain,2,pMiss)
+apply(rain,1,pMiss)
 
 # Lets remove the columns with lots of missing data
+# Data with over 25% missing should be not be imputed
+# Important to recognize random missing data vs systematic missing data
+
 rain_df <- rain %>% select(-Sunshine,-Evaporation,-Cloud3pm,-Cloud9am)
 
+## Imputed Data
+
+impute_data <-  mice(rain_df,m=5,maxit=50,meth='pmm',seed=500) # predictive mean matching 
+
+
 # Better ways to account for NAs are bootstrapping or imputing data with machine learning.
-# Unfortunately I want to focus on other things as bootstrapping is compliacated 
+# Unfortunately I want to focus on other things as bootstrapping is complicated 
 # and imputing lots of data can be computationally expensive
-# A cool function I found for imputing 
-# data.imputed <- rfImpute(RaintTomorrow~., data = rain, iter=6) 
+# A cool function I found for imputing
+
+data.imputed <- rfImpute(RaintTomorrow~., data = rain, iter=6) 
+
 # This was too computationally expensive for my poor little laptop though :(
 
 
@@ -71,11 +87,11 @@ numTest <- row - numTrain
 training <- rain_df_1[sample(row, numTrain), ]
 test <- rain_df_1[sample(row, numTest), ]
 
-xtest<- test %>% select(month,yday, Location, MinTemp, MaxTemp, Rainfall, RainToday)
-ytest<-test$RainTomorrow
+
 ####### Model Building
 
 help(randomForest)
+
 fit <- randomForest(RainTomorrow~month+
                       yday+
                       Location+
@@ -87,7 +103,7 @@ fit <- randomForest(RainTomorrow~month+
                     keep.forest=TRUE)
 
 fit
-gini_score<- as.data.frame(importance(fit))
+
 
 ##### Model Tuning OOB
 # Error rate
@@ -122,7 +138,7 @@ result <- confusionMatrix(con$forest.pred, con$RainTomorrow, mode="prec_recall",
 result
 result$overall["Accuracy"]
 result$byClass["Precision"]
-result$byClass["Recall"]
+result$byClass["Recall"] # Lots of false negatives
 result$byClass["F1"]
 
 #################################
@@ -142,9 +158,9 @@ auc_ROCR <- auc_ROCR@y.values[[1]]
 auc_ROCR
 
 
-cutoffs <- data.frame(cut=perf@alpha.values[[1]], fpr=perf@x.values[[1]], 
-                      tpr=perf@y.values[[1]])
-temp <- subset(cutoffs, fpr < 0.2 & tpr>0.9)
+#cutoffs <- data.frame(cut=perf@alpha.values[[1]], fpr=perf@x.values[[1]], 
+#                      tpr=perf@y.values[[1]])
+#temp <- subset(cutoffs, fpr < 0.2 & tpr>0.9)
 
 ##################################
 #
@@ -152,6 +168,7 @@ temp <- subset(cutoffs, fpr < 0.2 & tpr>0.9)
 #
 ##################################
 
+gini_score<- as.data.frame(importance(fit))
 gini_score <- data.frame(
   names=c("month",
           "yday",
@@ -203,13 +220,13 @@ gini_score<- as.data.frame(importance(fit2))
 ##### Model Tuning OOB
 # Error rate
 oob.error.data <- data.frame(
-  Trees=rep(1:nrow(fit$err.rate), times=1),
+  Trees=rep(1:nrow(fit2$err.rate), times=1),
   Type=rep(c("OOB",
              "Yes",
-             "No"), each=nrow(fit$err.rate)),
-  Error=c(fit$err.rate[,"OOB"],
-          fit$err.rate[,"Yes"],
-          fit$err.rate[,"No"]))
+             "No"), each=nrow(fit2$err.rate)),
+  Error=c(fit2$err.rate[,"OOB"],
+          fit2$err.rate[,"Yes"],
+          fit2$err.rate[,"No"]))
 
 error_rate<-ggplot(data=oob.error.data, aes(x=Trees, y=Error)) +
   geom_line(aes(color=Type),size=3)+
@@ -252,6 +269,7 @@ gini_score <- data.frame(
           "Rainfall",
           "RainToday",
           "Pressure3pm",
+          "Pressure9pm",
           "WindGustSpeed"),
   gini=importance(fit2))
 
